@@ -1,0 +1,735 @@
+openapi: 3.0.0
+info:
+  title: Choreo Notes API
+  version: "1.0.0"
+  description: >
+    REST API документация для приложения Choreo Notes. Все защищенные
+    маршруты используют JWT токен в заголовке Authorization в формате
+    "Bearer <token>".
+servers:
+  - url: http://localhost:3000
+    description: Development server
+tags:
+  - name: Auth
+    description: Аутентификация и информация о пользователе
+  - name: Moves
+    description: CRUD для движений
+  - name: Routines
+    description: CRUD для связок
+  - name: Routine Moves
+    description: Управление движениями внутри связки
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                    example: Server is running
+
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/login:
+    post:
+      summary: Login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/logout:
+    post:
+      summary: Logout (client-side token removal)
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logout successful
+
+  /api/auth/me:
+    get:
+      summary: Get current user
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/moves:
+    get:
+      summary: Get all moves for the authenticated user
+      tags: [Moves]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by name (alias "q" also supported)
+        - in: query
+          name: difficulty_level
+          schema:
+            type: string
+            enum: [beginner, intermediate, advanced]
+      responses:
+        "200":
+          description: List of moves
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  moves:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Move"
+                  count:
+                    type: integer
+                    example: 2
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    post:
+      summary: Create a new move
+      tags: [Moves]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveInput"
+      responses:
+        "201":
+          description: Move created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Move created successfully
+                  move:
+                    $ref: "#/components/schemas/Move"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/moves/{id}:
+    get:
+      summary: Get move by ID
+      tags: [Moves]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/MoveIdParam"
+      responses:
+        "200":
+          description: Move found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  move:
+                    $ref: "#/components/schemas/Move"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    put:
+      summary: Update move
+      tags: [Moves]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/MoveIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveInput"
+      responses:
+        "200":
+          description: Move updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Move updated successfully
+                  move:
+                    $ref: "#/components/schemas/Move"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    delete:
+      summary: Delete move
+      tags: [Moves]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/MoveIdParam"
+      responses:
+        "200":
+          description: Move deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Move deleted successfully
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/routines:
+    get:
+      summary: Get all routines for the authenticated user
+      tags: [Routines]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of routines
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  routines:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Routine"
+                  count:
+                    type: integer
+                    example: 1
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    post:
+      summary: Create a routine
+      tags: [Routines]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoutineInput"
+      responses:
+        "201":
+          description: Routine created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Routine created successfully
+                  routine:
+                    $ref: "#/components/schemas/Routine"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/routines/{id}:
+    get:
+      summary: Get routine by ID
+      tags: [Routines]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoutineIdParam"
+      responses:
+        "200":
+          description: Routine found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  routine:
+                    $ref: "#/components/schemas/Routine"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    put:
+      summary: Update routine
+      tags: [Routines]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoutineIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoutineInput"
+      responses:
+        "200":
+          description: Routine updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Routine updated successfully
+                  routine:
+                    $ref: "#/components/schemas/Routine"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    delete:
+      summary: Delete routine
+      tags: [Routines]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoutineIdParam"
+      responses:
+        "200":
+          description: Routine deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Routine deleted successfully
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/routines/{id}/moves:
+    get:
+      summary: Get moves for a routine
+      tags: [Routine Moves]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoutineIdParam"
+      responses:
+        "200":
+          description: Moves for routine
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  moves:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MoveInRoutine"
+                  count:
+                    type: integer
+                    example: 3
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    post:
+      summary: Add move to routine
+      tags: [Routine Moves]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoutineIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoutineMoveInput"
+      responses:
+        "201":
+          description: Move added to routine
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Move added to routine successfully
+                  routine_move:
+                    $ref: "#/components/schemas/RoutineMove"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/routines/{id}/moves/{moveId}:
+    put:
+      summary: Update move order in routine
+      tags: [Routine Moves]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoutineIdParam"
+        - $ref: "#/components/parameters/MoveIdInRoutineParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoutineMoveOrderInput"
+      responses:
+        "200":
+          description: Move order updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Move order updated successfully
+                  routine_move:
+                    $ref: "#/components/schemas/RoutineMove"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    delete:
+      summary: Remove move from routine
+      tags: [Routine Moves]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoutineIdParam"
+        - $ref: "#/components/parameters/MoveIdInRoutineParam"
+      responses:
+        "200":
+          description: Move removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Move removed from routine successfully
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    MoveIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+      description: Move identifier
+    RoutineIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+      description: Routine identifier
+    MoveIdInRoutineParam:
+      in: path
+      name: moveId
+      required: true
+      schema:
+        type: integer
+      description: Move identifier inside routine
+
+  responses:
+    UnauthorizedError:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, username]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 6
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    AuthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Login successful
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+          description: JWT access token
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Move:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        video_url:
+          type: string
+        difficulty_level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        user_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    MoveInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        video_url:
+          type: string
+          description: YouTube/Vimeo URL
+        difficulty_level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+    Routine:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        duration_minutes:
+          type: integer
+        user_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    RoutineInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        duration_minutes:
+          type: integer
+          minimum: 0
+    RoutineMoveInput:
+      type: object
+      required: [move_id, order]
+      properties:
+        move_id:
+          type: integer
+        order:
+          type: integer
+          minimum: 0
+    RoutineMoveOrderInput:
+      type: object
+      required: [order]
+      properties:
+        order:
+          type: integer
+          minimum: 0
+    RoutineMove:
+      type: object
+      properties:
+        routine_id:
+          type: integer
+        move_id:
+          type: integer
+        order_index:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    MoveInRoutine:
+      allOf:
+        - $ref: "#/components/schemas/Move"
+        - type: object
+          properties:
+            order_index:
+              type: integer
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid email or password
+        details:
+          type: array
+          items:
+            type: object
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Validation failed
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+

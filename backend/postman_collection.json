@@ -1,0 +1,473 @@
+{
+  "info": {
+    "name": "Choreo Notes API",
+    "description": "API collection for Choreo Notes application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"username\": \"testuser\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moves",
+      "item": [
+        {
+          "name": "Get All Moves",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/moves",
+              "host": ["{{base_url}}"],
+              "path": ["moves"]
+            }
+          }
+        },
+        {
+          "name": "Search Moves",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/moves?search=spin",
+              "host": ["{{base_url}}"],
+              "path": ["moves"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "spin"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by Difficulty",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/moves?difficulty_level=beginner",
+              "host": ["{{base_url}}"],
+              "path": ["moves"],
+              "query": [
+                {
+                  "key": "difficulty_level",
+                  "value": "beginner"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Move by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/moves/1",
+              "host": ["{{base_url}}"],
+              "path": ["moves", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Move",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Spin Move\",\n  \"description\": \"Basic spinning move\",\n  \"video_url\": \"https://www.youtube.com/watch?v=example\",\n  \"difficulty_level\": \"beginner\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/moves",
+              "host": ["{{base_url}}"],
+              "path": ["moves"]
+            }
+          }
+        },
+        {
+          "name": "Update Move",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Move\",\n  \"description\": \"Updated description\",\n  \"difficulty_level\": \"intermediate\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/moves/1",
+              "host": ["{{base_url}}"],
+              "path": ["moves", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Move",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/moves/1",
+              "host": ["{{base_url}}"],
+              "path": ["moves", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Routines",
+      "item": [
+        {
+          "name": "Get All Routines",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/routines",
+              "host": ["{{base_url}}"],
+              "path": ["routines"]
+            }
+          }
+        },
+        {
+          "name": "Get Routine by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/routines/1",
+              "host": ["{{base_url}}"],
+              "path": ["routines", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Routine",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Morning Routine\",\n  \"description\": \"A routine for morning practice\",\n  \"duration_minutes\": 15\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/routines",
+              "host": ["{{base_url}}"],
+              "path": ["routines"]
+            }
+          }
+        },
+        {
+          "name": "Update Routine",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Routine\",\n  \"description\": \"Updated description\",\n  \"duration_minutes\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/routines/1",
+              "host": ["{{base_url}}"],
+              "path": ["routines", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Routine",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/routines/1",
+              "host": ["{{base_url}}"],
+              "path": ["routines", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Routine Moves",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/routines/1/moves",
+              "host": ["{{base_url}}"],
+              "path": ["routines", "1", "moves"]
+            }
+          }
+        },
+        {
+          "name": "Add Move to Routine",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"move_id\": 1,\n  \"order\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/routines/1/moves",
+              "host": ["{{base_url}}"],
+              "path": ["routines", "1", "moves"]
+            }
+          }
+        },
+        {
+          "name": "Update Move Order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/routines/1/moves/1",
+              "host": ["{{base_url}}"],
+              "path": ["routines", "1", "moves", "1"]
+            }
+          }
+        },
+        {
+          "name": "Remove Move from Routine",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/routines/1/moves/1",
+              "host": ["{{base_url}}"],
+              "path": ["routines", "1", "moves", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
+
+
